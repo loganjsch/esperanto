@@ -1,0 +1,12 @@
+[package]
+name = "esperanto-server"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+esperanto-core = { path = "../esperanto-core" } # This is how you link them!
+
+tokio = { version = "1", features = ["full"] }
+axum = "0.7"
+serde = "1.0"
+serde_json = "1.0"
