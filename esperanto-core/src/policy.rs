@@ -1,5 +1,6 @@
 // Conatins logic for loading and parsing the policies.yml file.
 
+
 use serde::Deserialize;
 use std::collections::HashMap;
 
@@ -22,3 +23,7 @@ pub fn load_policy(policy_id: &str) -> Result<Policy, crate::error::CoreError> {
     // ... logic to open policies.yml, find the policy, and parse it ...
     unimplemented!()
 }
+
+// A function to parse policies
+
+// A fucntion to retrieve policies 

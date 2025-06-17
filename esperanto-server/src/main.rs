@@ -1,4 +1,6 @@
 // Application entry point for starting the Esperanto server
+// Will set up logging, create API router by calling the api module, 
+// binds to a TCP listener, and starts serving requests.
 
 mod api; // Declare the api module
 
