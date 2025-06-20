@@ -19,7 +19,7 @@ pub struct GoldenValues {
 }
 
 // A function to load a specific policy from the file
-pub fn load_policy(policy_id: &str) -> Result<Policy, crate::error::CoreError> {
+pub fn load_policy(_policy_id: &str) -> Result<Policy, crate::error::CoreError> {
     // ... logic to open policies.yml, find the policy, and parse it ...
     unimplemented!()
 }

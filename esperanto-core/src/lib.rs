@@ -4,7 +4,7 @@
 
 pub mod policy;
 pub mod verifier;
-pub mod attesation;
+pub mod attestation;
 pub mod error;
 
 pub fn add(left: u64, right: u64) -> u64 {
