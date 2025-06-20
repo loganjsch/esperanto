@@ -1,0 +1,13 @@
+# Rust build directory
+target/
+
+# VS Code settings (optional, but common for IDE configs)
+.vscode/
+
+# Editor swap files
+*.swp
+*.swo
+
+# Operating System generated files
+.DS_Store # macOS
+Thumbs.db # Windows
