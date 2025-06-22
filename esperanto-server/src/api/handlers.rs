@@ -4,17 +4,22 @@ use axum::response::{IntoResponse, Response};
 use serde::Deserialize;
 use serde_json::json;
 use esperanto_core::{policy, verifier, error::CoreError}; // Use the library!
+use axum::body::Bytes;
 
 #[derive(Deserialize)]
 pub struct PlaceholderRequest {}
 
 // the parameters of this function are an extractor
 // extractors tells axum to try to parse body of http request into placeholderrequest struct
+
 pub async fn verify_nitro_handler(
-    Json(_payload): Json<PlaceholderRequest>
+    body: Bytes
 ) -> Response {
-    // for testing, just prove the endpoint works
-    // 'not implemented' == success
+    println!("Received {} bytes", body.len());
+    println!("Bytes")
+
+    //Process raw bytes here as needed
+
     let response_body = json!({
         "status" : "success",
         "message" : "Endpoint hit, logic not implemented yet."
