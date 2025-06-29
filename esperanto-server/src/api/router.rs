@@ -6,6 +6,6 @@ use crate::api::handlers;
 pub fn create_router() -> Router {
     Router::new()
         // Add a route for verifying Nitro attestation
-        .route("/verify/nitro_enclave", post(handlers::verify_nitro_handler))
+        .route("/verify/nitro_enclave", post(handlers::verify_nitro_handler_with_policy))
         // Add more routes as needed
 }
