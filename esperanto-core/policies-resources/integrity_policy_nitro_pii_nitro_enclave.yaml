@@ -1,0 +1,72 @@
+# policy_nitro_pii_processor_enclave.yaml
+policyName: "PIIProcessorEnclave_Prod_v2.0"
+description: "Defines trusted state for the production PII processing Nitro Enclave application."
+appliesToAssetType: "aws_nitro_enclave" # This policy applies to assets identified as AWS Nitro Enclaves
+
+goldenMeasurements:
+  # 1. Enclave Image File (EIF) Build-Time Measurements (SHA384 hashes)
+  # These are derived from your *built* EIF for the PII processing application.
+  # Your CI/CD pipeline for the enclave application would compute and push these.
+  - name: "golden_eif_pcr0_kernel_cmdline_ramdisk"
+    type: "pcr_sha384"
+    expectedHashRef: "vault://goldenvault/nitro/pii_processor_v2.0/eif_pcr0_sha384"
+  - name: "golden_eif_pcr1_kernel_cmdline_first_ramdisk"
+    type: "pcr_sha384"
+    expectedHashRef: "vault://goldenvault/nitro/pii_processor_v2.0/eif_pcr1_sha384"
+  - name: "golden_eif_pcr2_additional_ramdisk"
+    type: "pcr_sha384"
+    expectedHashRef: "vault://goldenvault/nitro/pii_processor_v2.0/eif_pcr2_sha384"
+  - name: "golden_eif_pcr8_signing_certificate" # Hash of the EIF's signing certificate
+    type: "pcr_sha384"
+    expectedHashRef: "vault://goldenvault/nitro/pii_processor_v2.0/eif_pcr8_sha384_signing_cert"
+
+  # 2. Parent EC2 Instance Context (Dynamic, but Policy-Controlled)
+  # These are not direct hashes from the vault, but patterns/lists that the verifier checks against.
+  - name: "allowed_parent_iam_roles"
+    type: "regex_list"
+    expectedValue:
+      - "^arn:aws:iam::\\d{12}:role/ProdEnclaveLauncherRole$" # Only specific IAM role can launch
+  - name: "allowed_parent_instance_types"
+    type: "string_list"
+    expectedValue: ["m5.large", "c5.xlarge"] # Only specific instance types can host
+  - name: "allowed_regions"
+    type: "string_list"
+    expectedValue: ["us-east-1", "eu-west-1"] # Only allowed regions
+
+evaluationRules:
+  logicalOperator: "AND" # All conditions must be true for the enclave to be TRUSTED
+  conditions:
+    # Verify EIF measurements match the golden build-time hashes
+    - attribute: "verifier.result.eif_pcr0_match"
+      operator: "equals"
+      value: "MATCHED"
+    - attribute: "verifier.result.eif_pcr1_match"
+      operator: "equals"
+      value: "MATCHED"
+    - attribute: "verifier.result.eif_pcr2_match"
+      operator: "equals"
+      value: "MATCHED"
+    - attribute: "verifier.result.eif_pcr8_match"
+      operator: "equals"
+      value: "MATCHED"
+
+    # Verify parent instance attributes from the attestation document (PCR3/4 context)
+    - attribute: "verifier.result.parent_iam_role_arn"
+      operator: "matches_any_regex"
+      value: "policy.goldenMeasurements.allowed_parent_iam_roles"
+    - attribute: "verifier.result.parent_instance_type"
+      operator: "in_list"
+      value: "policy.goldenMeasurements.allowed_parent_instance_types"
+    - attribute: "verifier.result.parent_instance_region"
+      operator: "in_list"
+      value: "policy.goldenMeasurements.allowed_regions"
+
+    # Ensure the attestation document itself is recent and signed by AWS
+    - attribute: "verifier.result.attestation_document_age_seconds"
+      operator: "less_than_or_equal_to"
+      value: 30 # Attestation document must be very fresh (e.g., 30 seconds)
+    - attribute: "verifier.result.aws_signature_valid"
+      operator: "equals"
+      value: "true"
+
+defaultTrustStatus: "UNKNOWN"

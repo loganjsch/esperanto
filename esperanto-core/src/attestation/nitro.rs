@@ -66,35 +66,21 @@ pub fn load_nitro_root_ca_pem(path: &str) -> Result<Vec<u8>, AttestationVerifica
     Ok(pem.contents)
 }
 
-struct MyPCRs {
+pub struct EsperantoPCRs {
     pcr_map: HashMap<u8, String>,
 }
 
-impl PCRProvider for MyPCRs {
+impl PCRProvider for EsperantoPCRs {
     fn pcr_0(&self) -> Option<&str> { self.pcr_map.get(&0).map(|s| s.as_str()) }
     fn pcr_1(&self) -> Option<&str> { self.pcr_map.get(&1).map(|s| s.as_str()) }
     fn pcr_2(&self) -> Option<&str> { self.pcr_map.get(&2).map(|s| s.as_str()) }
     fn pcr_8(&self) -> Option<&str> { self.pcr_map.get(&8).map(|s| s.as_str()) }
 }
-// pub struct PCRProvider {
-//     pub pcr_0: Option<String>,
-//     pub pcr_1: Option<String>,
-//     pub pcr_2: Option<String>,
-// }
-
-// fn map_to_pcr_provider(pcr_map: &HashMap<u8, String>) -> PCRProvider {
-//     PCRProvider {
-//         pcr_0: pcr_map.get(&0).cloned(),
-//         pcr_1: pcr_map.get(&1).cloned(),
-//         pcr_2: pcr_map.get(&2).cloned(),
-//     }
-// }
 
 /// Verify AWS Nitro Enclave attestation document using only exposed APIs.
 ///
 /// # Arguments
 /// - `attestation_doc_bytes`: Raw COSE-signed attestation document bytes.
-/// - `aws_nitro_root_ca_der`: DER-encoded AWS Nitro root CA cert bytes.
 /// - `policy`: Expected attestation policy (PCRs, nonce required flag).
 /// - `runtime_nonce`: Optional runtime nonce bytes for freshness check.
 ///
@@ -120,47 +106,6 @@ pub fn verify_nitro_attestation_against_policy(
         println!("From policy: PCR{} = {}", p.index, p.value);
     }
 
-    // println!("module_id: {}", doc.module_id);
-
-    // // Print digest (assuming Digest implements Debug or you can convert)
-    // println!("digest: {:?}", doc.digest);
-
-    // println!("timestamp: {}", doc.timestamp);
-
-    // // Print PCRs
-    // println!("pcrs:");
-    // for (index, pcr_bytes) in &doc.pcrs {
-    //     let hex_str = hex::encode(&pcr_bytes);
-    //     println!("  PCR{} = {}", index, hex_str);
-    // }
-
-    // // Print certificate
-    // println!("certificate: {}", hex::encode(&doc.certificate));
-
-    // // Print CA bundle
-    // println!("cabundle:");
-    // for (i, cert) in doc.cabundle.iter().enumerate() {
-    //     println!("  CA {}: {}", i, hex::encode(cert));
-    // }
-
-    // // Print public key if present
-    // match &doc.public_key {
-    //     Some(pk) => println!("public_key: {}", hex::encode(pk)),
-    //     None => println!("public_key: None"),
-    // }
-
-    // // Print user data if present
-    // match &doc.user_data {
-    //     Some(ud) => println!("user_data: {}", hex::encode(ud)),
-    //     None => println!("user_data: None"),
-    // }
-
-    // // Print nonce if present
-    // match &doc.nonce {
-    //     Some(n) => println!("nonce: {}", hex::encode(n)),
-    //     None => println!("nonce: None"),
-    // }
-
     // Build expected PCR map
     let expected_pcr_map: HashMap<u8, String> = policy.expected_pcrs.iter()
         .map(|p| (p.index, p.value.clone()))
@@ -170,7 +115,7 @@ pub fn verify_nitro_attestation_against_policy(
         println!("Built expected_pcr_map: PCR{} = {}", idx, val);
     }
 
-    let expected_pcrs = MyPCRs{pcr_map: expected_pcr_map};
+    let expected_pcrs = EsperantoPCRs{pcr_map: expected_pcr_map};
 
     // Validate expected PCRs using crate's exposed API
     validate_expected_pcrs(&doc, &expected_pcrs)
@@ -188,7 +133,7 @@ pub fn verify_nitro_attestation_against_policy(
     }
 
     // Build PCR map from validated doc to return (using crate's public API)
-    // This relies on doc.pcrs being accessible — if not accessible, you may only rely on PCR validation above and omit claims extraction
+    // This relies on doc.pcrs being accessible
     let mut pcr_map = HashMap::new();
     for (&idx, val) in doc.pcrs.iter() {
         pcr_map.insert(idx.try_into().unwrap(), hex::encode(val));

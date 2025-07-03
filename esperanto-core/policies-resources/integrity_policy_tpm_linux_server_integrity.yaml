@@ -1,0 +1,50 @@
+# policy_tpm_linux_server_integrity.yaml
+policyName: "LinuxServerBootIntegrity_Prod_v1.1"
+description: "Defines the trusted boot state for production Linux servers using TPM 2.0."
+appliesToAssetType: "tpm_node" # This policy applies to assets identified as TPM-enabled nodes
+
+goldenMeasurements:
+  # These 'expectedHashRef' values would be securely captured from a known-good,
+  # golden image of your production Linux server OS (e.g., Ubuntu 22.04 LTS, RHEL 9).
+  # They represent the SHA256 hashes of specific boot components.
+  - name: "golden_pcr0_bios_firmware"
+    type: "pcr_sha256"
+    expectedHashRef: "vault://goldenvault/tpm/linux_prod_v1.1/pcr0_sha256"
+  - name: "golden_pcr1_bootloader"
+    type: "pcr_sha256"
+    expectedHashRef: "vault://goldenvault/tpm/linux_prod_v1.1/pcr1_sha256"
+  - name: "golden_pcr2_grub_config"
+    type: "pcr_sha256"
+    expectedHashRef: "vault://goldenvault/tpm/linux_prod_v1.1/pcr2_sha256"
+  - name: "golden_pcr4_kernel_initramfs"
+    type: "pcr_sha256"
+    expectedHashRef: "vault://goldenvault/tpm/linux_prod_v1.1/pcr4_sha256"
+  - name: "golden_pcr7_secureboot_state" # PCR7 often measures Secure Boot state
+    type: "pcr_sha256"
+    expectedHashRef: "vault://goldenvault/tpm/linux_prod_v1.1/pcr7_sha256"
+
+evaluationRules:
+  logicalOperator: "AND" # All conditions must be true for the node to be TRUSTED
+  conditions:
+    # Verify that the actual PCR measurements from the node match the golden values
+    - attribute: "verifier.result.pcr0_sha256_match"
+      operator: "equals"
+      value: "MATCHED"
+    - attribute: "verifier.result.pcr1_sha256_match"
+      operator: "equals"
+      value: "MATCHED"
+    - attribute: "verifier.result.pcr2_sha256_match"
+      operator: "equals"
+      value: "MATCHED"
+    - attribute: "verifier.result.pcr4_sha256_match"
+      operator: "equals"
+      value: "MATCHED"
+    - attribute: "verifier.result.pcr7_sha256_match"
+      operator: "equals"
+      value: "MATCHED"
+    # Ensure the attestation is recent enough to be considered valid
+    - attribute: "verifier.result.attestation_age_seconds"
+      operator: "less_than_or_equal_to"
+      value: 300 # Attestation must be no older than 5 minutes
+
+defaultTrustStatus: "UNKNOWN" # If any rule fails or no attestation is available, default to UNKNOWN

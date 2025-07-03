@@ -1,0 +1,55 @@
+# access_policy_pii_data_transfer.yaml
+policyName: "AllowPIITransferToTrustedEnclave"
+description: "Authorizes PII data transfer only from trusted TPM nodes to trusted Nitro Enclaves."
+appliesToResourceType: "data_transfer" # A custom resource type representing data movement
+
+rules:
+  - name: "AllowSecurePIIFlow"
+    effect: "ALLOW"
+    conditions:
+      logicalOperator: "AND"
+      conditions:
+        # 1. Source Asset (TPM Node) must be TRUSTED
+        - attribute: "request.source.asset.type"
+          operator: "equals"
+          value: "tpm_node"
+        - attribute: "request.source.asset.trust_status"
+          operator: "equals"
+          value: "TRUSTED"
+        - attribute: "request.source.asset.policy_applied" # Ensure the correct trust policy was used
+          operator: "equals"
+          value: "LinuxServerBootIntegrity_Prod_v1.1"
+
+        # 2. Destination Asset (Nitro Enclave) must be TRUSTED
+        - attribute: "request.destination.asset.type"
+          operator: "equals"
+          value: "aws_nitro_enclave"
+        - attribute: "request.destination.asset.trust_status"
+          operator: "equals"
+          value: "TRUSTED"
+        - attribute: "request.destination.asset.policy_applied" # Ensure the correct trust policy was used
+          operator: "equals"
+          value: "PIIProcessorEnclave_Prod_v2.0"
+
+        # 3. Data Classification and Action
+        - attribute: "request.data.classification"
+          operator: "equals"
+          value: "PII" # Only allow data explicitly classified as PII under this rule
+        - attribute: "request.action"
+          operator: "equals"
+          value: "send_data" # The specific action being controlled
+
+        # 4. (Optional) Protocol Security
+        - attribute: "request.protocol"
+          operator: "equals"
+          value: "TLS_VSOCK" # Enforce secure communication channel for enclaves
+
+  - name: "DenyUntrustedOrNonPIIFlow"
+    effect: "DENY"
+    # This rule acts as a catch-all for anything not explicitly allowed by the "AllowSecurePIIFlow" rule.
+    # It reinforces the Zero Trust principle of "default deny".
+    conditions:
+      logicalOperator: "ALWAYS_TRUE"
+      value: "true" # This rule always applies if no preceding ALLOW rule matched
+
+defaultEffect: "DENY" # Default to deny all requests not explicitly allowed
