@@ -19,8 +19,7 @@ The system is designed around a central `Esperanto Secure Core` that handles all
 ### Built With
 
 - **Backend:** [Rust](https://golang.org/)
-- **API:** RESTful API with OpenAPI specification
-- **Cloud Platforms:** AWS, Azure, GCP
+- **API:** RESTful API
 - **Core Technologies:** AWS Nitro Enclaves, Intel SGX, AMD SEV, TPM 2.0, ARM TrustZone
 
 # Codebase Architecture
